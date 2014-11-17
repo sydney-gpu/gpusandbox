@@ -2,7 +2,12 @@
 find_package(OpenGL REQUIRED)
 find_package(OpenCL REQUIRED)
 
-include_directories(${COMMON_INCLUDE_DIRS})
+set(CLFLOCK_INC_DIRS
+	${COMMON_INCLUDE_DIRS}
+	${OPENCL_INCLUDE_DIRS}
+)
+
+include_directories(${CLFLOCK_INC_DIRS})
 
 # sample source files
 file(GLOB CLFLOCK_SRC_FILES 

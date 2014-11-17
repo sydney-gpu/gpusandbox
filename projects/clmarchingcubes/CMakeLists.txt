@@ -2,7 +2,12 @@
 find_package(OpenGL REQUIRED)
 find_package(OpenCL REQUIRED)
 
-include_directories(${COMMON_INCLUDE_DIRS})
+set(MARCHINGCUBES_INC_DIRS
+	${COMMON_INCLUDE_DIRS}
+	${OPENCL_INCLUDE_DIRS}
+)
+
+include_directories(${MARCHINGCUBES_INC_DIRS})
 
 # sample source files
 file(GLOB MARCHINGCUBES_SRC_FILES 
