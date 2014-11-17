@@ -154,7 +154,7 @@ int main(int argc, char* argv[])
     CL_CHECK(clCreateCommandQueue, result);
 
 	// load kernel code
-	FILE* file = fopen("/Users/AIE/Development/GitHub/OpenCLMC/mc.cl", "rb");
+	FILE* file = fopen("/Users/AIE/Development/GitHub/gpusandbox/kernels/cl/marchingcubes.cl", "rb");
 	if (file == nullptr)
 	{
 		printf("Failed to load kernel file mc.cl!\n");

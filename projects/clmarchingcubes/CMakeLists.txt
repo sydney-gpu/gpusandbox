@@ -14,6 +14,6 @@ file(GLOB MARCHINGCUBES_SRC_FILES
   ${CMAKE_SOURCE_DIR}/kernels/cl/marchingcubes.cl
 )
 
-add_executable(marchingcubes ${MARCHINGCUBES_SRC_FILES})
+add_executable(clmarchingcubes ${MARCHINGCUBES_SRC_FILES})
 
-target_link_libraries(marchingcubes glfw ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES} ${OPENCL_LIBRARIES})
+target_link_libraries(clmarchingcubes glfw ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES} ${OPENCL_LIBRARIES})

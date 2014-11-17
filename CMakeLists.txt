@@ -28,4 +28,4 @@ set(COMMON_INCLUDE_DIRS
 
 # samples
 add_subdirectory(${CMAKE_SOURCE_DIR}/projects/clflock)
-add_subdirectory(${CMAKE_SOURCE_DIR}/projects/marchingcubes)
+add_subdirectory(${CMAKE_SOURCE_DIR}/projects/clmarchingcubes)

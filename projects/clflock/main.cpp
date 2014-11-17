@@ -1,8 +1,9 @@
 
 #include <gl_core_4_4.h>
-#include "utilities.h"
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
+#include <vector>
 
 #if defined(__APPLE__) || defined(MACOSX)
 	#include <OpenCL/cl.h>
@@ -28,6 +29,8 @@
 #if !defined(__APPLE__) && !defined(MACOSX)
 typedef CL_API_ENTRY cl_int(CL_API_CALL *clGetGLContextInfoKHRfunc)(const cl_context_properties*, cl_gl_context_info, size_t, void*, size_t*);
 #endif
+
+GLFWwindow* createGLWindow(int width, int height, const char* title, bool fullscreen);
 
 struct Params
 {
@@ -60,7 +63,7 @@ int main(int a_iArgc, char* a_aszArgv[])
 		0.3f, 
 		10, 
 		10, // wander weight
-		1, // separation
+		1.5f, // separation
 		1, // cohesion
 		2, // alignment
 		0 };
@@ -254,7 +257,7 @@ int main(int a_iArgc, char* a_aszArgv[])
 	CL_CHECK(clCreateCommandQueue, result);
 
 	// load kernel code
-	FILE* file = fopen("/Users/AIE/Development/GitHub/GPGPUAI/kernels/boids.cl", "rb");
+	FILE* file = fopen("/Users/AIE/Development/GitHub/gpusandbox/kernels/cl/flock.cl", "rb");
 	if (file == nullptr)
 	{
 		printf("Failed to load kernel file boids.cl!\n");
@@ -418,4 +421,40 @@ int main(int a_iArgc, char* a_aszArgv[])
 	glfwTerminate();
 
 	return 0;
+}
+
+GLFWwindow* createGLWindow(int width, int height, const char* title, bool fullscreen)
+{
+	// window creation and OpenGL initialisaion
+	if (!glfwInit())
+	{
+		printf("Window creation failed\n");
+		return nullptr;
+	}
+
+	// for now I'm using opengl 4.1 (OSX / Windows)
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+
+	GLFWwindow* window = glfwCreateWindow(width, height, title, fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr);
+	if (window == nullptr)
+	{
+		printf("Window creation failed\n");
+		glfwTerminate();
+		return nullptr;
+	}
+	glfwMakeContextCurrent(window);
+
+	// update opengl function pointers using "OpenGL Loader Generator"
+	if (ogl_LoadFunctions() == ogl_LOAD_FAILED)
+	{
+		printf("Window creation failed\n");
+		glfwTerminate();
+		return nullptr;
+	}
+
+	return window;
 }
