@@ -26,6 +26,11 @@ set(COMMON_INCLUDE_DIRS
   ${CMAKE_SOURCE_DIR}/inc
 )
 
+# set output directories
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 # samples
 add_subdirectory(${CMAKE_SOURCE_DIR}/projects/clflock)
 add_subdirectory(${CMAKE_SOURCE_DIR}/projects/clmarchingcubes)
