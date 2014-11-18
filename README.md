@@ -19,7 +19,7 @@ A collection of random GPU projects utilising a mix of CUDA, OpenCL, OpenGL and 
   
 **OpenGL**:
 
-  Current examples are written for OpenCL 4.1 (OSX supported). Most modern GPU hardware supports GL4.3 which allows for COmpute shaders. Future example projects will include 4.3 and 4.4 samples to demonstrate Compute.
+  Current examples are written for OpenGL 4.1 (OSX supported). Most modern GPU hardware supports GL4.3 which allows for Compute shaders. Future example projects will include 4.3 and 4.4 samples to demonstrate Compute.
   
 **DirectX**:
 
