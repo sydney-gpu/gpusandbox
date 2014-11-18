@@ -7,7 +7,7 @@ A collection of random GPU projects utilising a mix of CUDA, OpenCL, OpenGL and 
 
   The C/C++ code uses cmake to create the project files / makefile for your desired platform. Be sure to install cmake and either use the cmake GUI program to generate the files, or use the command-line:
   
-    *cmake .*
+    cmake .
 
 **OpenCL**:
 
