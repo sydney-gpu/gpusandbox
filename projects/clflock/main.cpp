@@ -257,7 +257,7 @@ int main(int a_iArgc, char* a_aszArgv[])
 	CL_CHECK(clCreateCommandQueue, result);
 
 	// load kernel code
-	FILE* file = fopen("/Users/AIE/Development/GitHub/gpusandbox/kernels/cl/flock.cl", "rb");
+	FILE* file = fopen("/Users/AIE/Development/GitHub/gpusandbox/bin/kernels/cl/flock.cl", "rb");
 	if (file == nullptr)
 	{
 		printf("Failed to load kernel file boids.cl!\n");
