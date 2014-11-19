@@ -1,6 +1,4 @@
-
-#include <gl_core_4_4.h>
-#include <GLFW/glfw3.h>
+#include "utilities.h"
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <vector>
@@ -20,8 +18,7 @@
 	#include <CL/cl_gl.h>
 #endif
 
-// helper macros for creating a shader and checking for opencl errors
-#define STRINGIFY(str) #str
+// helper macros for checking for opencl errors
 #define CL_CHECK(str, result) if (result != CL_SUCCESS) { printf("Error: %s - %i\n", #str, result); }
 
 // on windows / linux we need to get access to the extension function handle to determine which
@@ -56,19 +53,21 @@ int main(int a_iArgc, char* a_aszArgv[])
 {
 	glm::vec3 simulationArea(200);
 	Params params = { 
-		20*20,
-		15, 
-		50, 
-		8.0f, 
-		0.3f, 
-		10, 
+		20*20, // neighbourhood radius^2
+		15, // max sterring force
+		50, // max velocity
+		8.0f,  // wander radius
+		0.3f, // wander jitter
+		10, // wander offset distance
 		10, // wander weight
-		1.5f, // separation
-		1, // cohesion
-		2, // alignment
+		1.5f, // separation weight
+		1, // cohesion weight
+		2, // alignment weight
 		0 };
 
-	GLFWwindow* window = createGLWindow(1280, 720, "boids", false);
+	GLFWwindow* window = createWindow(1280, 720, "Flocking");
+	if (window == nullptr)
+		exit(EXIT_FAILURE);
 
 	glClearColor(0, 0, 0, 1);
 	glEnable(GL_DEPTH_TEST);
@@ -107,7 +106,7 @@ int main(int a_iArgc, char* a_aszArgv[])
 	glDeleteShader(vs);
 	glDeleteShader(fs);
 
-	// hand-coded crappy box around the marching cube blob
+	// hand-coded crappy box around the flock
 	glm::vec4 lines[] = {
 		glm::vec4(0, 0, 0, 1), glm::vec4(1),
 		glm::vec4(simulationArea.x, 0, 0, 1), glm::vec4(1),
@@ -149,7 +148,7 @@ int main(int a_iArgc, char* a_aszArgv[])
 	glBindVertexArray(0);
 
 	cl_uint boidCount = 1 << 16;
-	params.boidCount = boidCount / 16;
+	params.boidCount = boidCount / 8;
 	printf("Boids: %i\n", params.boidCount);
 
 	glm::vec4* positions = new glm::vec4[boidCount];
@@ -257,28 +256,9 @@ int main(int a_iArgc, char* a_aszArgv[])
 	CL_CHECK(clCreateCommandQueue, result);
 
 	// load kernel code
-	FILE* file = fopen("/Users/AIE/Development/GitHub/gpusandbox/bin/kernels/cl/flock.cl", "rb");
-	if (file == nullptr)
-	{
-		printf("Failed to load kernel file boids.cl!\n");
-
-		clReleaseCommandQueue(queue);
-		clReleaseContext(context);
-		glDeleteBuffers(1, &boxVBO);
-		glDeleteVertexArrays(1, &boxVAO);
-		glDeleteBuffers(1, &boidPositionVBO);
-		glDeleteBuffers(1, &boidVelocityVBO);
-		glDeleteVertexArrays(1, &boidVAO);
-		glDeleteProgram(program);
-
-		exit(EXIT_FAILURE);
-	}
-	fseek(file, 0, SEEK_END);
-	size_t size = ftell(file);
-	fseek(file, 0, SEEK_SET);
-	char* kernelSource = new char[size];
-	fread(kernelSource, sizeof(char), size, file);
-	fclose(file);
+	size_t size = 0;
+	char* kernelSource = readFileContents(
+		"/Users/AIE/Development/GitHub/gpusandbox/bin/kernels/cl/flock.cl", &size);
 
 	// build program for the selected device and context
 	cl_program clprogram = clCreateProgramWithSource(context, 1, (const char**)&kernelSource, &size, &result);
@@ -308,7 +288,7 @@ int main(int a_iArgc, char* a_aszArgv[])
 	}
 
 	// extract the kernel
-	cl_kernel kernel = clCreateKernel(clprogram, "RunGPU", &result);
+	cl_kernel kernel = clCreateKernel(clprogram, "flocking", &result);
 	CL_CHECK(clCreateKernel, result);
 
 	// create opencl memory object links
@@ -322,10 +302,12 @@ int main(int a_iArgc, char* a_aszArgv[])
 	CL_CHECK(clCreateBuffer, result);
 	
 	// set the kernel arguments
+	float deltaTime = 0.0166666f;	// setting a 1/60fps time step by default
 	result = clSetKernelArg(kernel, 0, sizeof(cl_mem), &positionLink);
 	result |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &velocityLink);
 	result |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &wanderLink);
 	result |= clSetKernelArg(kernel, 3, sizeof(cl_mem), &paramsLink);
+	result |= clSetKernelArg(kernel, 4, sizeof(float), &deltaTime);
 	CL_CHECK(clSetKernelArg, result);
 
 	float prevTime = (float)glfwGetTime();
@@ -335,15 +317,14 @@ int main(int a_iArgc, char* a_aszArgv[])
 		!glfwGetKey(window, GLFW_KEY_ESCAPE))
 	{
 		float time = (float)glfwGetTime();
-		float deltaTime = 0.01666f;//time - prevTime;
+		deltaTime = time - prevTime;
 
 		// ensure opengl is complete
 		glFinish();
 
-		glm::vec4 randVec = glm::linearRand(glm::vec4(-1.0f), glm::vec4(1.0f));
-		result = clSetKernelArg(kernel, 4, sizeof(cl_float4), &randVec);
-		result |= clSetKernelArg(kernel, 5, sizeof(float), &deltaTime);
-		CL_CHECK(clSetKernelArg, result);
+		// uncomment this if you want, but the simulation wouldn't be even
+	//	result = clSetKernelArg(kernel, 4, sizeof(float), &deltaTime);
+	//	CL_CHECK(clSetKernelArg, result);
 		
 		// we set up write events in case we use out-of-order computations
 		cl_event writeEvents[3] = { 0, 0, 0 };
@@ -421,40 +402,4 @@ int main(int a_iArgc, char* a_aszArgv[])
 	glfwTerminate();
 
 	return 0;
-}
-
-GLFWwindow* createGLWindow(int width, int height, const char* title, bool fullscreen)
-{
-	// window creation and OpenGL initialisaion
-	if (!glfwInit())
-	{
-		printf("Window creation failed\n");
-		return nullptr;
-	}
-
-	// for now I'm using opengl 4.1 (OSX / Windows)
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-
-	GLFWwindow* window = glfwCreateWindow(width, height, title, fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr);
-	if (window == nullptr)
-	{
-		printf("Window creation failed\n");
-		glfwTerminate();
-		return nullptr;
-	}
-	glfwMakeContextCurrent(window);
-
-	// update opengl function pointers using "OpenGL Loader Generator"
-	if (ogl_LoadFunctions() == ogl_LOAD_FAILED)
-	{
-		printf("Window creation failed\n");
-		glfwTerminate();
-		return nullptr;
-	}
-
-	return window;
 }

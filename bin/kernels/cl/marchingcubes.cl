@@ -1,4 +1,5 @@
 // marching cubes using atomic indexing
+// direct port of a C implementation
 
 constant float4 CUBE_CORNERS[8] =
 {
@@ -316,7 +317,7 @@ float sampleVolume(float4 v,
 	return d;
 }
 
-kernel void kernelMC(int a_maxFaces,
+kernel void marchingCubes(int a_maxFaces,
 					 write_only global uint* a_faceCount, // atomic index into vertices
 					 write_only global float4* a_vertices,
 					 float a_threshold,

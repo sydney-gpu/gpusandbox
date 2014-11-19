@@ -13,6 +13,8 @@ include_directories(${MARCHINGCUBES_INC_DIRS})
 file(GLOB MARCHINGCUBES_SRC_FILES 
   ${CMAKE_SOURCE_DIR}/inc/gl_core_4_4.h
   ${CMAKE_SOURCE_DIR}/src/gl_core_4_4.c
+  ${CMAKE_SOURCE_DIR}/inc/utilities.h
+  ${CMAKE_SOURCE_DIR}/src/utilities.cpp
   *.cpp
   *.c
   *.h

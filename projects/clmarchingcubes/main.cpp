@@ -1,7 +1,6 @@
-#include "gl_core_4_4.h"
+#include "utilities.h"
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
-#include <GLFW/glfw3.h>
 #include <vector>
 
 #if defined(__APPLE__) || defined(MACOSX)
@@ -20,8 +19,7 @@
 	#include <CL/cl_gl.h>
 #endif
 
-// helper macros for creating a shader and checking for opencl errors
-#define STRINGIFY(str) #str
+// helper macros for checking for opencl errors
 #define CL_CHECK(str, result) if (result != CL_SUCCESS) { printf("Error: %s - %i\n", #str, result); }
 
 // on windows / linux we need to get access to the extension function handle to determine which
@@ -65,8 +63,7 @@ struct CLData
 };
 
 // method to initialise all opengl settings and buffers
-GLFWwindow* setupGL(int width, int height, const char* tile, 
-	GLData& glData, const MCData& mcData);
+void setupGL(GLData& glData, const MCData& mcData);
 
 int main(int argc, char* argv[])
 {
@@ -78,7 +75,11 @@ int main(int argc, char* argv[])
 	glm::vec4 particles[particleCount];
 
 	// window creation and opengl initialisaion
-	GLFWwindow* window = setupGL(1280, 720, "OpenCLMC", glData, mcData);
+	GLFWwindow* window = createWindow(1280, 720, "Marching Cubes");
+	if (window == nullptr)
+		exit(EXIT_FAILURE);
+
+	setupGL(glData, mcData);
     
     // opencl setup
 	cl_uint numPlatforms = 0;
@@ -105,6 +106,7 @@ int main(int argc, char* argv[])
     CL_CHECK(clGetDeviceIDs, result);
 	
 	// create appropriate context properties depending on platform
+	// this tells CL to use the GL context to be able to share buffers
 #if defined(__APPLE__) || defined(MACOSX)
     CGLContextObj kCGLContext = CGLGetCurrentContext();
     CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
@@ -154,27 +156,9 @@ int main(int argc, char* argv[])
     CL_CHECK(clCreateCommandQueue, result);
 
 	// load kernel code
-	FILE* file = fopen("/Users/AIE/Development/GitHub/gpusandbox/bin/kernels/cl/marchingcubes.cl", "rb");
-	if (file == nullptr)
-	{
-		printf("Failed to load kernel file mc.cl!\n");
-
-		clReleaseCommandQueue(clData.queue);
-		clReleaseContext(clData.context);
-		glDeleteBuffers(1, &glData.boxVBO);
-		glDeleteVertexArrays(1, &glData.boxVAO);
-		glDeleteBuffers(1, &glData.blobVBO);
-		glDeleteVertexArrays(1, &glData.blobVAO);
-		glDeleteProgram(glData.program);
-
-		exit(EXIT_FAILURE);
-	}
-	fseek(file, 0, SEEK_END);
-	size_t size = ftell(file);
-	fseek(file, 0, SEEK_SET);
-	char* kernelSource = new char[size];
-	fread(kernelSource, sizeof(char), size, file);
-	fclose(file);
+	size_t size = 0;
+	char* kernelSource = readFileContents(
+		"/Users/AIE/Development/GitHub/gpusandbox/bin/kernels/cl/marchingcubes.cl", &size);
 
 	// build program for the selected device and context
 	clData.program = clCreateProgramWithSource(clData.context, 1, (const char**)&kernelSource, &size, &result);
@@ -203,7 +187,7 @@ int main(int argc, char* argv[])
 	}
 
 	// extract the kernel
-	clData.kernel = clCreateKernel(clData.program, "kernelMC", &result);
+	clData.kernel = clCreateKernel(clData.program, "marchingCubes", &result);
 	CL_CHECK(clCreateKernel, result);
 
 	// create opencl memory object links
@@ -318,40 +302,8 @@ int main(int argc, char* argv[])
 	exit(EXIT_SUCCESS);
 }
 
-GLFWwindow* setupGL(int width, int height, const char* title, GLData& glData, const MCData& mcData)
+void setupGL(GLData& glData, const MCData& mcData)
 {
-	// window creation and OpenGL initialisaion
-	if (!glfwInit())
-	{
-		exit(EXIT_FAILURE);
-		return nullptr;
-	}
-
-	// for now I'm using opengl 4.1 (OSX / Windows)
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-
-	GLFWwindow* window = glfwCreateWindow(width, height, title, nullptr, nullptr);
-	if (window == nullptr)
-	{
-		printf("Window creation failed\n");
-		glfwTerminate();
-		exit(EXIT_FAILURE);
-		return nullptr;
-	}
-	glfwMakeContextCurrent(window);
-
-	// update opengl function pointers using "OpenGL Loader Generator"
-	if (ogl_LoadFunctions() == ogl_LOAD_FAILED)
-	{
-		glfwTerminate();
-		exit(EXIT_FAILURE);
-		return nullptr;
-	}
-
 	glClearColor(0, 0, 0, 1);
 	glEnable(GL_DEPTH_TEST);
 
@@ -445,6 +397,4 @@ GLFWwindow* setupGL(int width, int height, const char* title, GLData& glData, co
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 4, GL_FLOAT, GL_TRUE, sizeof(glm::vec4) * 2, ((char*)0) + sizeof(glm::vec4));
 	glBindVertexArray(0);
-
-	return window;
 }

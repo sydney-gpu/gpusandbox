@@ -42,7 +42,7 @@ typedef struct Params
 	unsigned int boidCount;
 } Params;
 
-float4 Truncate(float maxSqr, float4 num)
+float4 truncate(float maxSqr, float4 num)
 {
 	float magSqr = num.x * num.x + num.y * num.y + num.z * num.z;
 	
@@ -57,23 +57,23 @@ float4 Truncate(float maxSqr, float4 num)
 	return num;
 }
 
-float LengthSqr(float4 n)
+float lengthSqr(float4 n)
 {
 	return n.x * n.x + n.y * n.y + n.z * n.z;
 }
 
+// simple pseudo-random number generation
 float rand(float2 co)
 {
 	float junk = 0;
 	return fract(sin(dot(co, (float2)(12.9898f, 78.233f))) * 43758.5453f, &junk);
 }
 
-__kernel void RunGPU(
-		__global float4* vPosition,
-		__global float4* vVelocity,
-		__global float4* vWanderTarget,
-		__constant struct Params* pp,
-		float4 random,
+kernel void flocking(
+		global float4* vPosition,
+		global float4* vVelocity,
+		global float4* vWanderTarget,
+		constant struct Params* pp,
 		float deltaTime
 	)
 {
@@ -145,30 +145,31 @@ __kernel void RunGPU(
 	// sum forces (prioritised)
 	// wander -> separation -> cohesions -> alignment
 	vSteeringForce += vWander * pp->wanderDistance * pp->wanderWeight;
-	vSteeringForce = Truncate(maxForceSqr, vSteeringForce);
+	vSteeringForce = truncate(maxForceSqr, vSteeringForce);
 	
-	if (LengthSqr(vSteeringForce) < maxForceSqr)
+	if (lengthSqr(vSteeringForce) < maxForceSqr)
 	{
 		vSteeringForce += vSeparation * pp->separationWeight;
-		vSteeringForce = Truncate(maxForceSqr, vSteeringForce);
+		vSteeringForce = truncate(maxForceSqr, vSteeringForce);
 
-		if (LengthSqr(vSteeringForce) < maxForceSqr)
+		if (lengthSqr(vSteeringForce) < maxForceSqr)
 		{
 			vSteeringForce += vCohesion * pp->cohesionWeight;
-			vSteeringForce = Truncate(maxForceSqr, vSteeringForce);
+			vSteeringForce = truncate(maxForceSqr, vSteeringForce);
 
-			if (LengthSqr(vSteeringForce) < maxForceSqr)
+			if (lengthSqr(vSteeringForce) < maxForceSqr)
 			{
 				vSteeringForce += vAlignment * pp->alignmentWeight;
-				vSteeringForce = Truncate(maxForceSqr, vSteeringForce);
+				vSteeringForce = truncate(maxForceSqr, vSteeringForce);
 			}
 		}
 	}
 	
 	// apply force to velocity
 	vVelocity[i].xyz += vSteeringForce.xyz * deltaTime;
-	vVelocity[i] = Truncate(pp->maxBoidSpeed * pp->maxBoidSpeed, vVelocity[i]);
+	vVelocity[i] = truncate(pp->maxBoidSpeed * pp->maxBoidSpeed, vVelocity[i]);
 
+	// barrier causes threads to halt until all threads have reached this point
 	barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
 
 	vPosition[i].xyz += vVelocity[i].xyz * deltaTime;
