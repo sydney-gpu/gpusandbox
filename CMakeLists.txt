@@ -36,5 +36,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin)
 
 # samples
+add_subdirectory(${CMAKE_SOURCE_DIR}/projects/glexample)
 add_subdirectory(${CMAKE_SOURCE_DIR}/projects/clflock)
 add_subdirectory(${CMAKE_SOURCE_DIR}/projects/clmarchingcubes)
