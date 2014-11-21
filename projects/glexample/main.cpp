@@ -55,8 +55,11 @@ int main(int argc, char* argv[])
 	printf("GL %i.%i\n", ogl_GetMajorVersion(), ogl_GetMinorVersion());
 
 	// now that opengl is initialised we can set the debug callback for errors
+	// NOTE: not quite supported in OSX's GL4.1 yet
+#if !defined(__APPLE__) && !defined(UNIX)
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(logGLDebugCallback, nullptr);
+#endif
 
 	// set the window resize callback to reset our viewport size (using a lambda)
 	glfwSetWindowSizeCallback(window, 
@@ -69,7 +72,7 @@ int main(int argc, char* argv[])
 	glEnable(GL_DEPTH_TEST);
 
 	// an example of font loading for UI text
-	UIFont font("../../bin/fonts/consolas.ttf", 16, 512, 512);
+	UIFont font("/users/AIE/Development/github/gpusandbox/bin/fonts/consolas.ttf", 16, 512, 512);
 	UIText uitext(&font, "FPS: 0000.00");
 
 	// something to track frames-per-second

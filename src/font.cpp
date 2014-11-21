@@ -114,11 +114,14 @@ bool UIFont::loadTTF(const char* path, float fontSize, int bitmapWidth, int bitm
 		size_t s = ftell(file);
 		fseek(file, 0, SEEK_SET);
 		ttf_buffer = new unsigned char[s];
-		fread(ttf_buffer, sizeof(char), s, file);
+		fread(ttf_buffer, sizeof(unsigned char), s, file);
 		fclose(file);
 	}
 	if (ttf_buffer == nullptr)
+	{
+		printf("Failed to load TTF: %s\n", path);
 		return false;
+	}
 
 	unsigned char* tempBitmap = new unsigned char[bitmapWidth * bitmapHeight];
     
