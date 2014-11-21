@@ -11,6 +11,8 @@ include_directories(${GLEXAMPLE_INC_DIRS})
 file(GLOB GLEXAMPLE_SRC_FILES 
   ${CMAKE_SOURCE_DIR}/inc/gl_core_4_4.h
   ${CMAKE_SOURCE_DIR}/src/gl_core_4_4.c
+  ${CMAKE_SOURCE_DIR}/inc/font.h
+  ${CMAKE_SOURCE_DIR}/src/font.cpp
   *.cpp
   *.c
   *.h
